@@ -1,0 +1,5 @@
+/Controller Bot
+/.deps
+/artifacts
+/node_modules
+yarn.lock
