@@ -1323,12 +1323,12 @@ library Counters {
     }
 }
 
-contract PlanetClassSpaceStation is ERC721, Ownable {
+contract MeteorClassSpaceStation is ERC721, Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
 
-    constructor() ERC721("PlanetClass", "PNT") {}
+    constructor() ERC721("MeteorClass", "MTR") {}
 
     function safeMint(address to) public onlyOwner returns(uint256){
         uint256 tokenId = _tokenIdCounter.current();
@@ -1336,7 +1336,6 @@ contract PlanetClassSpaceStation is ERC721, Ownable {
         _safeMint(to, tokenId);
         return tokenId;
     }
-    
 
     function updateWeight(uint256 tokenId, uint256 increase)external onlyOwner{
         _updateWeight(tokenId, increase);

@@ -16,7 +16,7 @@ Token Rewarding NFT platform.
 
 */
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -24,10 +24,11 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
-//Interface with the Elite Trading Token contract funcitons
+// Interface with the SpaceStation NFT contracts functions
 abstract contract spaceStationInterface {
     function safeMint(address account) virtual external returns (uint256);
     function transferOwnership(address newOwner) virtual external;
+    function updateWeight(uint256 tokenId, uint256 increase) virtual external;
 }
 
 contract SpaceStation_Control is Context, Ownable{
@@ -52,7 +53,7 @@ contract SpaceStation_Control is Context, Ownable{
     uint256 emissionRate = 0;       // Star emmission Rate used to ensure prob reward delivery
     uint256 totalMinted = 0;        // Total number of nfts minted. Used as a tracker for all space station classes and used for calculating station upgrades.
     address constant rewardPool = 0x8A4a253f3F3Bd17fF90Ff5b7a6460269b89718c8;    // Address for reward pool. Set at deployment    
-    address constant star = 0xf1277d1Ed8AD466beddF92ef448A132661956621; //0x8440178087C4fd348D43d0205F4574e0348a06F0;
+    address constant star = 0x99c0b46d0DB69591EB209027D98e3512F2fFe789; //0x8440178087C4fd348D43d0205F4574e0348a06F0;
     uint256 totalWeight = 0;        // Weight of all minted stations
     StationClass[] private stationClasses;  // Array of all the Spation Classes
     SpaceStations[] private spaceStations;   // Tracker for stations used for rewards 
@@ -62,10 +63,10 @@ contract SpaceStation_Control is Context, Ownable{
 
         stationClasses.push(StationClass({
             class:0,
-            contractAddress:0x1beD7eA356E9282836f06BAFd301DcB1691FfBad,
+            contractAddress:0x4D4DFB44b026bBCf6449bb499c052CDd4C482CBD,
             startingWeight:1000,
             upgradeRate:10,
-            price:10
+            price:1
         }));
         stationClasses.push(StationClass({
             class:1,
@@ -85,15 +86,16 @@ contract SpaceStation_Control is Context, Ownable{
 
     // Update the weight of existing SpaceStations
     function updateWeight(uint256 _startId, uint256 _endId) external {
-        for (uint256 pid = _startId; pid <= _endId; ++pid) {                                            // Cycle through all Spacestations
-            if(spaceStations[pid].lastUpdate > totalMinted){                                    // Check that new Nfts have been minted since stations last update
+        for (uint256 pid = _startId; pid <= _endId; pid++) {                                            // Cycle through all Spacestations
+            if(spaceStations[pid].lastUpdate < totalMinted){                                    // Check that new Nfts have been minted since stations last update
                 uint256 newStations = totalMinted.sub(spaceStations[pid].lastUpdate);               // Get the number of new nfts minted since last update
                 StationClass memory stationClass = stationClasses[spaceStations[pid].class];        // Get the Station Calsses stats
                 uint256 currentWeight = spaceStations[pid].weight;                                  // Get the current weight of the Station
                 uint256 upgradeRate = stationClass.upgradeRate;                                     // Fetch upgrade rate for current station
-                uint256 newWeight = ((currentWeight.mul(upgradeRate)).div(100)).mul(newStations);   // Calculate the new weight.
+                uint256 newWeight = ((currentWeight.mul(upgradeRate)).div(1000)).mul(newStations);   // Calculate the new weight.
 
                 spaceStations[pid].weight = currentWeight.add(newWeight);                           // Update the ships weight.
+                totalWeight = totalWeight.add(newWeight);                                           // Add the new weight to the total weight tracker
                 spaceStations[pid].lastUpdate = totalMinted;                                        // Update the lastUpdated ot the new total.
             }
         }
@@ -166,5 +168,11 @@ contract SpaceStation_Control is Context, Ownable{
             spaceStationInterface spaceStationContract = spaceStationInterface(stationClasses[classId].contractAddress);   //Create an interface to Stations NFT contract
             spaceStationContract.transferOwnership(_newOwner);
         }
+    }
+
+    // Allow for owner of stations contract change incase of new controller
+    function updateNftWeight(uint256 classId, uint256 tokenId,uint256 increase)external onlyOwner {
+        spaceStationInterface spaceStationContract = spaceStationInterface(stationClasses[classId].contractAddress);   //Create an interface to Stations NFT contract
+        spaceStationContract.updateWeight(tokenId,increase);
     }
 }
